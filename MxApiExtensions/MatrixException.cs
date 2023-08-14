@@ -21,9 +21,10 @@ public class MatrixException : Exception {
 
     //turn this into json
     public JsonObject GetAsJson() {
-        var jsonObject = new JsonObject();
-        jsonObject["errcode"] = ErrorCode;
-        jsonObject["error"] = Error;
+        var jsonObject = new JsonObject {
+            ["errcode"] = ErrorCode,
+            ["error"] = Error
+        };
         if(SoftLogout is not null) jsonObject["soft_logout"] = SoftLogout;
         if(RetryAfterMs is not null) jsonObject["retry_after_ms"] = RetryAfterMs;
         return jsonObject;

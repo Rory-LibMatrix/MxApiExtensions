@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Http.Timeouts;
 using MxApiExtensions;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -15,13 +16,13 @@ builder.Services.AddSingleton<CacheConfiguration>();
 builder.Services.AddScoped<Auth>();
 
 builder.Services.AddRequestTimeouts(x => {
-    x.DefaultPolicy = new() {
+    x.DefaultPolicy = new RequestTimeoutPolicy {
         Timeout = TimeSpan.FromMinutes(10),
         WriteTimeoutResponse = async context => {
             context.Response.StatusCode = 504;
             context.Response.ContentType = "application/json";
             await context.Response.StartAsync();
-            await context.Response.WriteAsJsonAsync(new MatrixException() {
+            await context.Response.WriteAsJsonAsync(new MatrixException {
                 ErrorCode = "M_TIMEOUT",
                 Error = "Request timed out"
             }.GetAsJson());

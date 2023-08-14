@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace MxApiExtensions.Controllers;
 
 [ApiController]
-[Route("/")]
+[Route("/{*_}")]
 public class GenericController : ControllerBase {
     private readonly ILogger<GenericController> _logger;
     private readonly CacheConfiguration _config;
@@ -17,13 +17,13 @@ public class GenericController : ControllerBase {
         _auth = auth;
     }
 
-    [HttpGet("{*_}")]
+    [HttpGet]
     public async Task Proxy([FromQuery] string? access_token, string _) {
         try {
             access_token ??= _auth.GetToken(fail: false);
             var mxid = _auth.GetUserId(fail: false);
 
-            _logger.LogInformation($"Proxying request for {mxid}: {Request.Path}{Request.QueryString}");
+            _logger.LogInformation("Proxying request for {}: {}{}", mxid, Request.Path, Request.QueryString);
 
             using var hc = new HttpClient();
             hc.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", access_token);
@@ -71,13 +71,13 @@ public class GenericController : ControllerBase {
         }
     }
 
-    [HttpPost("{*_}")]
+    [HttpPost]
     public async Task ProxyPost([FromQuery] string? access_token, string _) {
         try {
             access_token ??= _auth.GetToken(fail: false);
             var mxid = _auth.GetUserId(fail: false);
 
-            _logger.LogInformation($"Proxying request for {mxid}: {Request.Path}{Request.QueryString}");
+            _logger.LogInformation("Proxying request for {}: {}{}", mxid, Request.Path, Request.QueryString);
 
             using var hc = new HttpClient();
             hc.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", access_token);
@@ -89,10 +89,10 @@ public class GenericController : ControllerBase {
                     .Replace($"access_token={access_token}", "")
             );
 
-            var resp = await hc.SendAsync(new() {
+            var resp = await hc.SendAsync(new HttpRequestMessage {
                 Method = HttpMethod.Post,
                 RequestUri = new Uri($"{_config.Homeserver}{Request.Path}{Request.QueryString}"),
-                Content = new StreamContent(Request.Body),
+                Content = new StreamContent(Request.Body)
             });
 
             if (resp.Content is null) {

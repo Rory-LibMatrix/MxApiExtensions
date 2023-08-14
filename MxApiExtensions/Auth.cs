@@ -27,7 +27,7 @@ public class Auth {
         }
 
         if (token == null && fail) {
-            throw new MatrixException() {
+            throw new MatrixException {
                 ErrorCode = "M_MISSING_TOKEN",
                 Error = "Missing access token"
             };
@@ -40,7 +40,7 @@ public class Auth {
         var token = GetToken(fail);
         if (token == null) {
             if(fail) {
-                throw new MatrixException() {
+                throw new MatrixException {
                     ErrorCode = "M_MISSING_TOKEN",
                     Error = "Missing access token"
                 };
@@ -60,14 +60,14 @@ public class Auth {
         hc.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         var resp = hc.GetAsync($"{_config.Homeserver}/_matrix/client/v3/account/whoami").Result;
         if (!resp.IsSuccessStatusCode) {
-            throw new MatrixException() {
+            throw new MatrixException {
                 ErrorCode = "M_UNKNOWN",
                 Error = "[Rory&::MxSyncCache] Whoami request failed"
             };
         }
 
         if (resp.Content is null) {
-            throw new MatrixException() {
+            throw new MatrixException {
                 ErrorCode = "M_UNKNOWN",
                 Error = "No content in response"
             };
@@ -75,7 +75,7 @@ public class Auth {
 
         var json = JsonDocument.Parse(resp.Content.ReadAsStream()).RootElement;
         var mxid = json.GetProperty("user_id").GetString()!;
-        _logger.LogInformation($"Got mxid {mxid} from token {token}");
+        _logger.LogInformation("Got mxid {} from token {}", mxid, token);
         return mxid;
     }
 

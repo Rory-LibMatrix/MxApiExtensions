@@ -38,7 +38,7 @@ public class SyncController : ControllerBase {
                 // var resp = await hs._httpClient.GetAsync($"/_matrix/client/v3/sync?since={since}");
 
                 if (resp.Content is null) {
-                    throw new MatrixException() {
+                    throw new MatrixException {
                         ErrorCode = "M_UNKNOWN",
                         Error = "No content in response"
                     };
@@ -49,7 +49,7 @@ public class SyncController : ControllerBase {
                 await Response.StartAsync();
                 await using var stream = await resp.Content.ReadAsStreamAsync();
                 await using var target = System.IO.File.OpenWrite(cacheFile);
-                byte[] buffer = new byte[1];
+                var buffer = new byte[1];
 
                 int bytesRead;
                 while ((bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length)) > 0) {
@@ -78,17 +78,15 @@ public class SyncController : ControllerBase {
     }
 
     private async Task<bool> TrySendCached(string cacheFile) {
-        if (System.IO.File.Exists(cacheFile)) {
-            Response.StatusCode = 200;
-            Response.ContentType = "application/json";
-            await Response.StartAsync();
-            await using var stream = System.IO.File.OpenRead(cacheFile);
-            await stream.CopyToAsync(Response.Body);
-            await Response.CompleteAsync();
-            return true;
-        }
+        if (!System.IO.File.Exists(cacheFile)) return false;
 
-        return false;
+        Response.StatusCode = 200;
+        Response.ContentType = "application/json";
+        await Response.StartAsync();
+        await using var stream = System.IO.File.OpenRead(cacheFile);
+        await stream.CopyToAsync(Response.Body);
+        await Response.CompleteAsync();
+        return true;
     }
 
 #region Cache management
@@ -98,7 +96,7 @@ public class SyncController : ControllerBase {
         Directory.CreateDirectory(cacheDir);
         var cacheFile = Path.Join(cacheDir, $"sync-{since}.json");
         if (!Path.GetFullPath(cacheFile).StartsWith(Path.GetFullPath(cacheDir))) {
-            throw new MatrixException() {
+            throw new MatrixException {
                 ErrorCode = "M_UNKNOWN",
                 Error = "[Rory&::MxSyncCache] Cache file path is not in cache directory"
             };
