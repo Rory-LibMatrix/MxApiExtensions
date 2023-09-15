@@ -9,3 +9,4 @@ matrix-sync.json
 MatrixRoomUtils.Bot/bot_data/
 appsettings.Local*.json
 cache/
+token_map

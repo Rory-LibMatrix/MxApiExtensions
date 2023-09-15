@@ -1,7 +1,7 @@
 using ArcaneLibs.Extensions;
 using LibMatrix;
 
-namespace MxApiExtensions;
+namespace MxApiExtensions.Classes.LibMatrix;
 
 public class MxApiMatrixException : MatrixException {
     public string? GetAsJson() => new { ErrorCode, Error, SoftLogout, RetryAfterMs }.ToJson(ignoreNull: true);

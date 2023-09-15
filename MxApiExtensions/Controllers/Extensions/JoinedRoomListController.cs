@@ -2,10 +2,10 @@ using System.Collections.Concurrent;
 using System.Net.Http.Headers;
 using ArcaneLibs.Extensions;
 using LibMatrix.Homeservers;
-using LibMatrix.MxApiExtensions;
 using LibMatrix.RoomTypes;
 using LibMatrix.StateEventTypes.Spec;
 using Microsoft.AspNetCore.Mvc;
+using MxApiExtensions.Classes.LibMatrix;
 using MxApiExtensions.Services;
 
 namespace MxApiExtensions.Controllers.Extensions;
@@ -82,8 +82,6 @@ public class JoinedRoomListController : ControllerBase {
         }
     }
 
-    private SemaphoreSlim _roomInfoSemaphore = new(100, 100);
-
     private async Task<RoomInfoEntry> GetRoomInfo(AuthenticatedHomeserverGeneric hs, string roomId) {
         _logger.LogInformation("Getting room info for {room} for {user} ({hs})", roomId, hs.UserId, hs.FullHomeServerDomain);
         var room = await hs.GetRoom(roomId);
@@ -101,8 +99,8 @@ public class JoinedRoomListController : ControllerBase {
             result.StateCount++;
             if (@event.Type != "m.room.member") result.RoomState.Add(@event);
             else {
-                if(!result.MemberCounts.ContainsKey((@event.TypedContent as RoomMemberEventData)?.Membership)) result.MemberCounts.Add((@event.TypedContent as RoomMemberEventData)?.Membership, 0);
-                    result.MemberCounts[(@event.TypedContent as RoomMemberEventData)?.Membership]++;
+                if(!result.MemberCounts.ContainsKey((@event.TypedContent as RoomMemberEventContent)?.Membership)) result.MemberCounts.Add((@event.TypedContent as RoomMemberEventContent)?.Membership, 0);
+                    result.MemberCounts[(@event.TypedContent as RoomMemberEventContent)?.Membership]++;
             }
         }
 

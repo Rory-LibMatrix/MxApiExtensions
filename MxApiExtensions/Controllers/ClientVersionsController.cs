@@ -19,7 +19,7 @@ public class ClientVersionsController : ControllerBase {
 
     [HttpGet("/_matrix/client/versions")]
     public async Task<ClientVersionsResponse> Proxy([FromQuery] string? access_token, string? _) {
-        var clientVersions = new ClientVersionsResponse() {
+        var clientVersions = new ClientVersionsResponse {
             Versions = new() {
                 "r0.0.1",
                 "r0.1.0",

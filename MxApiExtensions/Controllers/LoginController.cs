@@ -4,6 +4,7 @@ using LibMatrix.Extensions;
 using LibMatrix.Responses;
 using LibMatrix.Services;
 using Microsoft.AspNetCore.Mvc;
+using MxApiExtensions.Classes.LibMatrix;
 using MxApiExtensions.Services;
 
 namespace MxApiExtensions.Controllers;
@@ -31,7 +32,7 @@ public class LoginController : ControllerBase {
             Response.StatusCode = (int)StatusCodes.Status403Forbidden;
             Response.ContentType = "application/json";
             await Response.StartAsync();
-            await Response.WriteAsync(new MxApiMatrixException() {
+            await Response.WriteAsync(new MxApiMatrixException {
                 ErrorCode = "M_FORBIDDEN",
                 Error = "[MxApiExtensions] Invalid username, must be of the form @user#domain:" + Request.Host.Value
             }.GetAsJson() ?? "");

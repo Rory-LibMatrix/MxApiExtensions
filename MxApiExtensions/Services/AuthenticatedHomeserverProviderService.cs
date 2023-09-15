@@ -1,5 +1,6 @@
 using LibMatrix.Homeservers;
 using LibMatrix.Services;
+using MxApiExtensions.Classes.LibMatrix;
 
 namespace MxApiExtensions.Services;
 

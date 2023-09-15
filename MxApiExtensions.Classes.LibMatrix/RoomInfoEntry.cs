@@ -1,7 +1,6 @@
-﻿using System.Text.Json.Serialization;
-using LibMatrix.Responses;
+﻿using LibMatrix.Responses;
 
-namespace LibMatrix.MxApiExtensions;
+namespace MxApiExtensions.Classes.LibMatrix;
 
 /// <summary>
 /// Generic room info, this will most likely be out of date due to caching!

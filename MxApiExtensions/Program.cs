@@ -1,6 +1,7 @@
 using LibMatrix.Services;
 using Microsoft.AspNetCore.Http.Timeouts;
 using MxApiExtensions;
+using MxApiExtensions.Classes.LibMatrix;
 using MxApiExtensions.Services;
 
 var builder = WebApplication.CreateBuilder(args);

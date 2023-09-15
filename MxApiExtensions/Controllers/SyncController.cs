@@ -12,6 +12,7 @@ using LibMatrix.RoomTypes;
 using LibMatrix.StateEventTypes.Spec;
 using Microsoft.AspNetCore.Mvc;
 using MxApiExtensions.Classes;
+using MxApiExtensions.Classes.LibMatrix;
 using MxApiExtensions.Extensions;
 using MxApiExtensions.Services;
 
@@ -201,7 +202,7 @@ public class SyncController : ControllerBase {
                 Join = new() {
                     {
                         room.RoomId,
-                        new SyncResult.RoomsDataStructure.JoinedRoomDataStructure() {
+                        new SyncResult.RoomsDataStructure.JoinedRoomDataStructure {
                             AccountData = new() {
                                 Events = new()
                             },
@@ -246,7 +247,7 @@ public class SyncController : ControllerBase {
             .Where(x =>
                 x.Type == "m.room.member"
                 && x.StateKey != syncState.Homeserver.WhoAmI.UserId
-                && (x.TypedContent as RoomMemberEventData).Membership == "join"
+                && (x.TypedContent as RoomMemberEventContent).Membership == "join"
                 )
             .Select(x => x.StateKey));
         joinRoom.Summary.JoinedMemberCount = joinRoom.Summary.Heroes.Count;
@@ -256,8 +257,8 @@ public class SyncController : ControllerBase {
     }
 
     private async Task<StateEventResponse> GetStatusMessage(SyncState syncState, string message) {
-        return new StateEventResponse() {
-            TypedContent = new PresenceStateEventData() {
+        return new StateEventResponse {
+            TypedContent = new PresenceEventContent {
                 DisplayName = "MxApiExtensions",
                 Presence = "online",
                 StatusMessage = message,
