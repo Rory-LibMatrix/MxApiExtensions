@@ -40,7 +40,7 @@ public class ClientVersionsController : ControllerBase {
         };
         try {
             var hs = await _authenticatedHomeserverProviderService.GetHomeserver();
-            clientVersions = await hs.GetClientVersions();
+            clientVersions = await hs.GetClientVersionsAsync();
 
             _logger.LogInformation("Fetching client versions for {}: {}{}", hs.WhoAmI.UserId, Request.Path, Request.QueryString);
         }

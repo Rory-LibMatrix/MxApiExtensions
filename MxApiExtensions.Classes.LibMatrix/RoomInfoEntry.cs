@@ -1,4 +1,5 @@
-﻿using LibMatrix.Responses;
+﻿using LibMatrix;
+using LibMatrix.Responses;
 
 namespace MxApiExtensions.Classes.LibMatrix;
 

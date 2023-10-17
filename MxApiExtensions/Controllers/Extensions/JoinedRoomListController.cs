@@ -1,9 +1,9 @@
 using System.Collections.Concurrent;
 using System.Net.Http.Headers;
 using ArcaneLibs.Extensions;
+using LibMatrix.EventTypes.Spec.State;
 using LibMatrix.Homeservers;
 using LibMatrix.RoomTypes;
-using LibMatrix.StateEventTypes.Spec;
 using Microsoft.AspNetCore.Mvc;
 using MxApiExtensions.Classes.LibMatrix;
 using MxApiExtensions.Services;
@@ -34,7 +34,7 @@ public class JoinedRoomListController : ControllerBase {
         AuthenticatedHomeserverGeneric? hs = null;
         try {
             hs = await _authenticatedHomeserverProviderService.GetHomeserver();
-            _logger.LogInformation("Got room list with info request for {user} ({hs})", hs.UserId, hs.FullHomeServerDomain);
+            _logger.LogInformation("Got room list with info request for {user} ({hs})", hs.UserId, hs.ServerName);
             rooms = await hs.GetJoinedRooms();
         }
         catch (MxApiMatrixException e) {
@@ -59,7 +59,7 @@ public class JoinedRoomListController : ControllerBase {
             Response.Headers.Add("Cache-Control", "public, max-age=60");
             Response.Headers.Add("Expires", DateTime.Now.AddMinutes(1).ToString("R"));
             Response.Headers.Add("Last-Modified", DateTime.Now.ToString("R"));
-            Response.Headers.Add("X-Matrix-Server", hs.FullHomeServerDomain);
+            Response.Headers.Add("X-Matrix-Server", hs.ServerName);
             Response.Headers.Add("X-Matrix-User", hs.UserId);
             // await Response.StartAsync();
 
@@ -70,21 +70,21 @@ public class JoinedRoomListController : ControllerBase {
 
             foreach (var room in cachedRooms) {
                 yield return room.Value;
-                _logger.LogInformation("Sent cached room info for {room} for {user} ({hs})", room.Key, hs.UserId, hs.FullHomeServerDomain);
+                _logger.LogInformation("Sent cached room info for {room} for {user} ({hs})", room.Key, hs.UserId, hs.ServerName);
             }
 
             var tasks = rooms.Select(r => GetRoomInfo(hs, r.RoomId)).ToAsyncEnumerable();
 
             await foreach (var result in tasks) {
                 yield return result;
-                _logger.LogInformation("Sent room info for {room} for {user} ({hs})", result.RoomId, hs.UserId, hs.FullHomeServerDomain);
+                _logger.LogInformation("Sent room info for {room} for {user} ({hs})", result.RoomId, hs.UserId, hs.ServerName);
             }
         }
     }
 
     private async Task<RoomInfoEntry> GetRoomInfo(AuthenticatedHomeserverGeneric hs, string roomId) {
-        _logger.LogInformation("Getting room info for {room} for {user} ({hs})", roomId, hs.UserId, hs.FullHomeServerDomain);
-        var room = await hs.GetRoom(roomId);
+        _logger.LogInformation("Getting room info for {room} for {user} ({hs})", roomId, hs.UserId, hs.ServerName);
+        var room = hs.GetRoom(roomId);
         var state = room.GetFullStateAsync();
         var result = new RoomInfoEntry {
             RoomId = roomId,
@@ -106,7 +106,7 @@ public class JoinedRoomListController : ControllerBase {
 
         result.ExpiresAt = result.ExpiresAt.AddMilliseconds(100 * result.StateCount);
 
-        _logger.LogInformation("Got room info for {room} for {user} ({hs})", roomId, hs.UserId, hs.FullHomeServerDomain);
+        _logger.LogInformation("Got room info for {room} for {user} ({hs})", roomId, hs.UserId, hs.ServerName);
         while (!_roomInfoCache.TryAdd(roomId, result)) {
             _logger.LogWarning("Failed to add room info for {room} to cache, retrying...", roomId);
             await Task.Delay(100);
