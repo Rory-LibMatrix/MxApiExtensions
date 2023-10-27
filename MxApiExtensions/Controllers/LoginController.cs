@@ -43,7 +43,7 @@ public class LoginController : ControllerBase {
         if(!request.Identifier.User.StartsWith('@')) request.Identifier.User = '@' + request.Identifier.User;
         var hs = await _hsResolver.ResolveHomeserverFromWellKnown(hsCanonical);
         //var hs = await _hsProvider.Login(hsCanonical, mxid, request.Password);
-        var hsClient = new MatrixHttpClient { BaseAddress = new Uri(hs) };
+        var hsClient = new MatrixHttpClient { BaseAddress = new Uri(hs.client) };
         //hsClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", hsClient.DefaultRequestHeaders.Authorization!.Parameter);
         var resp = await hsClient.PostAsJsonAsync("/_matrix/client/r0/login", request);
         var loginResp = await resp.Content.ReadAsStringAsync();

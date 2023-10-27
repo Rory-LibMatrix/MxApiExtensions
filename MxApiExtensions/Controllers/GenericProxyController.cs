@@ -37,7 +37,7 @@ public class GenericController : ControllerBase {
                     .Replace($"access_token={access_token}", "")
             );
 
-            var resp = await hs._httpClient.GetAsync($"{Request.Path}{Request.QueryString}");
+            var resp = await hs.ClientHttpClient.GetAsync($"{Request.Path}{Request.QueryString}");
 
             if (resp.Content is null) {
                 throw new MxApiMatrixException {
@@ -91,7 +91,7 @@ public class GenericController : ControllerBase {
                     .Replace($"access_token={access_token}", "")
             );
 
-            var resp = await hs._httpClient.SendAsync(new HttpRequestMessage(HttpMethod.Post, $"{Request.Path}{Request.QueryString}") {
+            var resp = await hs.ClientHttpClient.SendAsync(new HttpRequestMessage(HttpMethod.Post, $"{Request.Path}{Request.QueryString}") {
                 Method = HttpMethod.Post,
                 Content = new StreamContent(Request.Body)
             });
@@ -148,7 +148,7 @@ public class GenericController : ControllerBase {
                     .Replace($"access_token={access_token}", "")
             );
 
-            var resp = await hs._httpClient.SendAsync(new HttpRequestMessage(HttpMethod.Put, $"{Request.Path}{Request.QueryString}") {
+            var resp = await hs.ClientHttpClient.SendAsync(new HttpRequestMessage(HttpMethod.Put, $"{Request.Path}{Request.QueryString}") {
                 Method = HttpMethod.Put,
                 Content = new StreamContent(Request.Body)
             });

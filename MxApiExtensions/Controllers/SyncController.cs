@@ -48,7 +48,7 @@ public class SyncController : ControllerBase {
 
         if (!_config.FastInitialSync.Enabled) {
             _logger.LogInformation("Starting sync for {} on {} ({})", hs.WhoAmI.UserId, hs.ServerName, hs.AccessToken);
-            var result = await hs._httpClient.GetAsync($"{Request.Path}?{qs}");
+            var result = await hs.ClientHttpClient.GetAsync($"{Request.Path}?{qs}");
             await Response.WriteHttpResponse(result);
             return;
         }
@@ -73,7 +73,7 @@ public class SyncController : ControllerBase {
                 syncState.NextSyncResponse = Task.Delay(30_000);
                 syncState.NextSyncResponse.ContinueWith(x => {
                     _logger.LogInformation("Sync for {} on {} ({}) starting", hs.WhoAmI.UserId, hs.ServerName, hs.AccessToken);
-                    syncState.NextSyncResponse = hs._httpClient.GetAsync($"{Request.Path}?{qs}");
+                    syncState.NextSyncResponse = hs.ClientHttpClient.GetAsync($"{Request.Path}?{qs}");
                 });
             }
 
