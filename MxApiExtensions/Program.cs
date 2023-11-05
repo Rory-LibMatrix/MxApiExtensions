@@ -1,4 +1,7 @@
+using System.Net.Mime;
+using LibMatrix;
 using LibMatrix.Services;
+using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Http.Timeouts;
 using MxApiExtensions;
 using MxApiExtensions.Classes.LibMatrix;
@@ -8,9 +11,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
-builder.Services.AddControllers().AddJsonOptions(options => {
-    options.JsonSerializerOptions.WriteIndented = true;
-});
+builder.Services.AddControllers().AddJsonOptions(options => { options.JsonSerializerOptions.WriteIndented = true; });
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -47,6 +48,13 @@ builder.Services.AddRequestTimeouts(x => {
     };
 });
 
+// builder.Services.AddCors(x => x.AddDefaultPolicy(y => y.AllowAnyHeader().AllowCredentials().AllowAnyOrigin().AllowAnyMethod()));
+builder.Services.AddCors(options => {
+    options.AddPolicy(
+        "Open",
+        policy => policy.AllowAnyOrigin().AllowAnyHeader());
+});
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -56,8 +64,37 @@ if (app.Environment.IsDevelopment()) {
 }
 
 // app.UseHttpsRedirection();
+app.UseCors("Open");
 
-app.UseAuthorization();
+app.UseExceptionHandler(exceptionHandlerApp =>
+{
+    exceptionHandlerApp.Run(async context =>
+    {
+
+        var exceptionHandlerPathFeature =
+            context.Features.Get<IExceptionHandlerPathFeature>();
+
+        if (exceptionHandlerPathFeature?.Error is MatrixException mxe) {
+            context.Response.StatusCode = mxe.ErrorCode switch {
+                "M_NOT_FOUND" => StatusCodes.Status404NotFound,
+                _ => StatusCodes.Status500InternalServerError
+            };
+            context.Response.ContentType = MediaTypeNames.Application.Json;
+            await context.Response.WriteAsync(mxe.GetAsJson()!);
+        }
+        else {
+            context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+            context.Response.ContentType = MediaTypeNames.Application.Json;
+            await context.Response.WriteAsync(new MxApiMatrixException() {
+                ErrorCode = "M_UNKNOWN",
+                Error = exceptionHandlerPathFeature?.Error.ToString()
+            }.GetAsJson());
+        }
+    });
+});
+
+
+// app.UseAuthorization();
 
 app.MapControllers();
 
