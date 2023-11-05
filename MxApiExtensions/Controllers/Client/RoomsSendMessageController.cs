@@ -55,7 +55,7 @@ public class RoomsSendMessageController(ILogger<LoginController> logger, Homeser
     }
 
     private async Task handleMxaeCommand(AuthenticatedHomeserverGeneric hs, string roomId, RoomMessageEventContent msg) {
-        var syncState = SyncController._syncStates.GetValueOrDefault(hs.AccessToken);
+        var syncState = SyncController.SyncStates.GetValueOrDefault(hs.AccessToken);
         if (syncState is null) return;
         syncState.SendEphemeralTimelineEventInRoom(roomId, new() {
             Sender = "@mxae:" + Request.Host.Value,

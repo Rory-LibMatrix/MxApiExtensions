@@ -39,7 +39,7 @@ public class DebugController : ControllerBase {
 
         _logger.LogInformation("Got debug request for {user}", mxid);
         return new {
-            SyncStates = SyncController._syncStates
+            SyncStates = SyncController.SyncStates
         };
     }
 }

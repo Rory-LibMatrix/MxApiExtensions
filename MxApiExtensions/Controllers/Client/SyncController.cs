@@ -23,7 +23,7 @@ namespace MxApiExtensions.Controllers;
 [Route("/")]
 public class SyncController(ILogger<SyncController> logger, MxApiExtensionsConfiguration config, AuthenticationService auth, AuthenticatedHomeserverProviderService hsProvider)
     : ControllerBase {
-    public static readonly ConcurrentDictionary<string, SyncState> _syncStates = new();
+    public static readonly ConcurrentDictionary<string, SyncState> SyncStates = new();
 
     private static SemaphoreSlim _semaphoreSlim = new(1, 1);
     private Stopwatch _syncElapsed = Stopwatch.StartNew();
@@ -51,7 +51,7 @@ public class SyncController(ILogger<SyncController> logger, MxApiExtensionsConfi
         }
 
         await _semaphoreSlim.WaitAsync();
-        var syncState = _syncStates.GetOrAdd($"{hs.WhoAmI.UserId}/{hs.WhoAmI.DeviceId}/{hs.ServerName}:{hs.AccessToken}", _ => {
+        var syncState = SyncStates.GetOrAdd($"{hs.WhoAmI.UserId}/{hs.WhoAmI.DeviceId}/{hs.ServerName}:{hs.AccessToken}", _ => {
             logger.LogInformation("Started tracking sync state for {} on {} ({})", hs.WhoAmI.UserId, hs.ServerName, hs.AccessToken);
             var ss = new SyncState {
                 IsInitialSync = string.IsNullOrWhiteSpace(since),
@@ -65,7 +65,7 @@ public class SyncController(ILogger<SyncController> logger, MxApiExtensionsConfi
 
             ss.NextSyncResponseStartedAt = DateTime.Now;
             ss.NextSyncResponse = Task.Delay(15_000);
-            ss.NextSyncResponse.ContinueWith(async x => {
+            ss.NextSyncResponse.ContinueWith(x => {
                 logger.LogInformation("Sync for {} on {} ({}) starting", hs.WhoAmI.UserId, hs.ServerName, hs.AccessToken);
                 ss.NextSyncResponse = hs.ClientHttpClient.GetAsync($"/_matrix/client/v3/sync?{qs}");
                 (ss.NextSyncResponse as Task<HttpResponseMessage>).ContinueWith(async x => EnqueueSyncResponse(ss, await x));
@@ -82,7 +82,7 @@ public class SyncController(ILogger<SyncController> logger, MxApiExtensionsConfi
             Response.StatusCode = StatusCodes.Status200OK;
             Response.ContentType = "application/json";
             await Response.StartAsync();
-            result.NextBatch ??= since ?? syncState.NextBatch;
+            result.NextBatch ??= since ?? syncState.NextBatch!;
             await JsonSerializer.SerializeAsync(Response.Body, result, new JsonSerializerOptions {
                 WriteIndented = true,
                 DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
@@ -100,7 +100,7 @@ public class SyncController(ILogger<SyncController> logger, MxApiExtensionsConfi
                 await syncState.NextSyncResponse.WaitAsync(TimeSpan.FromMilliseconds(newTimeout));
             else {
                 syncState.NextSyncResponse = hs.ClientHttpClient.GetAsync($"/_matrix/client/v3/sync?{qs}");
-                (syncState.NextSyncResponse as Task<HttpResponseMessage>).ContinueWith(async x => EnqueueSyncResponse(syncState, await x));
+                (syncState.NextSyncResponse as Task<HttpResponseMessage>)!.ContinueWith(async x => EnqueueSyncResponse(syncState, await x));
                 // await Task.Delay(250);
             }
         }
@@ -116,7 +116,7 @@ public class SyncController(ILogger<SyncController> logger, MxApiExtensionsConfi
         var response = syncState.SyncQueue.FirstOrDefault();
         if (response is null)
             response = new();
-        response.NextBatch ??= since ?? syncState.NextBatch;
+        response.NextBatch ??= since ?? syncState.NextBatch!;
         await JsonSerializer.SerializeAsync(Response.Body, response, new JsonSerializerOptions {
             WriteIndented = true,
             DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
@@ -124,20 +124,22 @@ public class SyncController(ILogger<SyncController> logger, MxApiExtensionsConfi
         await Response.CompleteAsync();
 
         Response.Body.Close();
-        if (preloadTask is not null)
+        if (preloadTask is not null) {
             await preloadTask;
+            preloadTask.Dispose();
+        }
     }
 
     private async Task EnqueuePreloadData(SyncState syncState) {
         var rooms = await syncState.Homeserver.GetJoinedRooms();
-        var dm_rooms = (await syncState.Homeserver.GetAccountDataAsync<Dictionary<string, List<string>>>("m.direct")).Aggregate(new List<string>(), (list, entry) => {
+        var dmRooms = (await syncState.Homeserver.GetAccountDataAsync<Dictionary<string, List<string>>>("m.direct")).Aggregate(new List<string>(), (list, entry) => {
             list.AddRange(entry.Value);
             return list;
         });
 
-        var ownHs = syncState.Homeserver.WhoAmI.UserId.Split(':')[1];
+        var ownHs = syncState.Homeserver.WhoAmI!.UserId!.Split(':')[1];
         rooms = rooms.OrderBy(x => {
-            if (dm_rooms.Contains(x.RoomId)) return -1;
+            if (dmRooms.Contains(x.RoomId)) return -1;
             var parts = x.RoomId.Split(':');
             if (parts[1] == ownHs) return 200;
             if (HomeserverWeightEstimation.EstimatedSize.ContainsKey(parts[1])) return HomeserverWeightEstimation.EstimatedSize[parts[1]] + parts[0].Length;
@@ -149,14 +151,14 @@ public class SyncController(ILogger<SyncController> logger, MxApiExtensionsConfi
         await Task.WhenAll(roomDataTasks);
     }
 
-    private SemaphoreSlim _roomDataSemaphore = new(32, 32);
+    private readonly SemaphoreSlim _roomDataSemaphore = new(32, 32);
 
     private async Task EnqueueRoomData(SyncState syncState, GenericRoom room) {
         await _roomDataSemaphore.WaitAsync();
         var roomState = room.GetFullStateAsync();
         var timeline = await room.GetMessagesAsync(limit: 100, dir: "b");
         timeline.Chunk.Reverse();
-        var SyncResponse = new SyncResponse {
+        var syncResponse = new SyncResponse {
             Rooms = new() {
                 Join = new() {
                     {
@@ -198,20 +200,20 @@ public class SyncController(ILogger<SyncController> logger, MxApiExtensionsConfi
         };
 
         await foreach (var stateEvent in roomState) {
-            SyncResponse.Rooms.Join[room.RoomId].State.Events.Add(stateEvent);
+            syncResponse.Rooms.Join[room.RoomId].State!.Events!.Add(stateEvent!);
         }
 
-        var joinRoom = SyncResponse.Rooms.Join[room.RoomId];
-        joinRoom.Summary.Heroes.AddRange(joinRoom.State.Events
+        var joinRoom = syncResponse.Rooms.Join[room.RoomId];
+        joinRoom.Summary!.Heroes.AddRange(joinRoom.State!.Events!
             .Where(x =>
                 x.Type == "m.room.member"
-                && x.StateKey != syncState.Homeserver.WhoAmI.UserId
-                && (x.TypedContent as RoomMemberEventContent).Membership == "join"
+                && x.StateKey != syncState.Homeserver.WhoAmI!.UserId
+                && (x.TypedContent as RoomMemberEventContent)!.Membership == "join"
             )
             .Select(x => x.StateKey));
         joinRoom.Summary.JoinedMemberCount = joinRoom.Summary.Heroes.Count;
 
-        syncState.SyncQueue.Enqueue(SyncResponse);
+        syncState.SyncQueue.Enqueue(syncResponse);
         _roomDataSemaphore.Release();
     }
 
@@ -225,8 +227,8 @@ public class SyncController(ILogger<SyncController> logger, MxApiExtensionsConfi
                 AvatarUrl = ""
             },
             Type = "m.presence",
-            StateKey = syncState.Homeserver.WhoAmI.UserId,
-            Sender = syncState.Homeserver.WhoAmI.UserId,
+            StateKey = syncState.Homeserver.WhoAmI!.UserId!,
+            Sender = syncState.Homeserver.WhoAmI!.UserId!,
             EventId = Guid.NewGuid().ToString(),
             OriginServerTs = 0
         };
@@ -234,10 +236,11 @@ public class SyncController(ILogger<SyncController> logger, MxApiExtensionsConfi
 
     private async Task EnqueueSyncResponse(SyncState ss, HttpResponseMessage task) {
         var sr = await task.Content.ReadFromJsonAsync<JsonObject>();
-        if (sr.ContainsKey("error")) throw sr.Deserialize<MatrixException>()!;
-        ss.NextBatch = sr["next_batch"].GetValue<string>();
+        if (sr!.ContainsKey("error")) throw sr.Deserialize<MatrixException>()!;
+        ss.NextBatch = sr["next_batch"]!.GetValue<string>();
         ss.IsInitialSync = false;
-        ss.SyncQueue.Enqueue(sr.Deserialize<SyncResponse>());
+        ss.SyncQueue.Enqueue(sr.Deserialize<SyncResponse>()!);
+        task.Dispose();
         ss.NextSyncResponse = null;
     }
 }
