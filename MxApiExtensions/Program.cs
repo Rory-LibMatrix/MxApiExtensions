@@ -3,7 +3,9 @@ using LibMatrix;
 using LibMatrix.Services;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Http.Timeouts;
+using Microsoft.Extensions.Logging.Console;
 using MxApiExtensions;
+using MxApiExtensions.Classes;
 using MxApiExtensions.Classes.LibMatrix;
 using MxApiExtensions.Services;
 
@@ -22,6 +24,7 @@ builder.Services.AddSingleton<MxApiExtensionsConfiguration>();
 
 builder.Services.AddScoped<AuthenticationService>();
 builder.Services.AddScoped<AuthenticatedHomeserverProviderService>();
+builder.Services.AddScoped<UserContextService>();
 
 builder.Services.AddSingleton<TieredStorageService>(x => {
     var config = x.GetRequiredService<MxApiExtensionsConfiguration>();
@@ -54,6 +57,7 @@ builder.Services.AddCors(options => {
         "Open",
         policy => policy.AllowAnyOrigin().AllowAnyHeader());
 });
+// builder.Logging.AddConsole(x => x.FormatterName = "custom").AddConsoleFormatter<CustomLogFormatter, SimpleConsoleFormatterOptions>();
 
 var app = builder.Build();
 

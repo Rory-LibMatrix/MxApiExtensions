@@ -7,24 +7,17 @@ namespace MxApiExtensions.Controllers.Extensions;
 
 [ApiController]
 [Route("/")]
-public class DebugController : ControllerBase {
-    private readonly ILogger _logger;
-    private readonly MxApiExtensionsConfiguration _config;
-    private readonly AuthenticationService _authenticationService;
+public class DebugController(ILogger<ProxyConfigurationController> logger, MxApiExtensionsConfiguration config, UserContextService userContextService)
+    : ControllerBase {
+    private readonly ILogger _logger = logger;
 
     private static ConcurrentDictionary<string, RoomInfoEntry> _roomInfoCache = new();
 
-    public DebugController(ILogger<ProxyConfigurationController> logger, MxApiExtensionsConfiguration config, AuthenticationService authenticationService,
-        AuthenticatedHomeserverProviderService authenticatedHomeserverProviderService) {
-        _logger = logger;
-        _config = config;
-        _authenticationService = authenticationService;
-    }
-
     [HttpGet("debug")]
     public async Task<object?> GetDebug() {
-        var mxid = await _authenticationService.GetMxidFromToken();
-        if(!_config.Admins.Contains(mxid)) {
+        var user = await userContextService.GetCurrentUserContext();
+        var mxid = user.Homeserver.UserId;
+        if(!config.Admins.Contains(mxid)) {
             _logger.LogWarning("Got debug request for {user}, but they are not an admin", mxid);
             Response.StatusCode = StatusCodes.Status403Forbidden;
             Response.ContentType = "application/json";
@@ -38,8 +31,6 @@ public class DebugController : ControllerBase {
         }
 
         _logger.LogInformation("Got debug request for {user}", mxid);
-        return new {
-            SyncStates = SyncController.SyncStates
-        };
+        return UserContextService.UserContextStore;
     }
 }

@@ -23,7 +23,7 @@ public class MediaProxyController(ILogger<GenericController> logger, MxApiExtens
     private static SemaphoreSlim _semaphore = new(1, 1);
     
     [HttpGet("/_matrix/media/{_}/download/{serverName}/{mediaId}")]
-    public async Task Proxy(string? _, string serverName, string mediaId) {
+    public async Task ProxyMedia(string? _, string serverName, string mediaId) {
         try {
             logger.LogInformation("Proxying media: {}{}", serverName, mediaId);
 
@@ -75,4 +75,7 @@ public class MediaProxyController(ILogger<GenericController> logger, MxApiExtens
             await Response.CompleteAsync();
         }
     }
+
+    [HttpGet("/_matrix/media/{_}/thumbnail/{serverName}/{mediaId}")]
+    public async Task ProxyThumbnail(string? _, string serverName, string mediaId) => await ProxyMedia(_, serverName, mediaId);
 }

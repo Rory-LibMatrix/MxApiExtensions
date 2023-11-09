@@ -13,23 +13,24 @@ using LibMatrix.Services;
 using Microsoft.AspNetCore.Mvc;
 using MxApiExtensions.Classes;
 using MxApiExtensions.Classes.LibMatrix;
+using MxApiExtensions.Extensions;
 using MxApiExtensions.Services;
 
 namespace MxApiExtensions.Controllers;
 
 [ApiController]
 [Route("/")]
-public class RoomsSendMessageController(ILogger<LoginController> logger, HomeserverResolverService hsResolver, AuthenticationService auth, MxApiExtensionsConfiguration conf,
-        AuthenticatedHomeserverProviderService hsProvider)
+public class RoomsSendMessageController(ILogger<LoginController> logger, UserContextService userContextService)
     : ControllerBase {
     [HttpPut("/_matrix/client/{_}/rooms/{roomId}/send/m.room.message/{txnId}")]
     public async Task Proxy([FromBody] JsonObject request, [FromRoute] string roomId, [FromRoute] string txnId, string _) {
-        var hs = await hsProvider.GetHomeserver();
+        var uc = await userContextService.GetCurrentUserContext();
+        // var hs = await hsProvider.GetHomeserver();
 
         var msg = request.Deserialize<RoomMessageEventContent>();
         if (msg is not null && msg.Body.StartsWith("mxae!")) {
 #pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
-            handleMxaeCommand(hs, roomId, msg);
+            handleMxaeCommand(uc, roomId, msg);
 #pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
             await Response.WriteAsJsonAsync(new EventIdResponse() {
                 EventId = "$" + string.Join("", Random.Shared.GetItems("abcdefghijklmnopqrstuvwxyzABCDEFGHIJLKMNOPQRSTUVWXYZ0123456789".ToCharArray(), 100))
@@ -38,13 +39,14 @@ public class RoomsSendMessageController(ILogger<LoginController> logger, Homeser
         }
         else {
             try {
-                var resp = await hs.ClientHttpClient.PutAsJsonAsync($"{Request.Path}{Request.QueryString}", request);
-                var loginResp = await resp.Content.ReadAsStringAsync();
-                Response.StatusCode = (int)resp.StatusCode;
-                Response.ContentType = resp.Content.Headers.ContentType?.ToString() ?? "application/json";
-                await Response.StartAsync();
-                await Response.WriteAsync(loginResp);
-                await Response.CompleteAsync();
+                var resp = await uc.Homeserver.ClientHttpClient.PutAsJsonAsync($"{Request.Path}{Request.QueryString}", request);
+                await Response.WriteHttpResponse(resp);
+                // var loginResp = await resp.Content.ReadAsStringAsync();
+                // Response.StatusCode = (int)resp.StatusCode;
+                // Response.ContentType = resp.Content.Headers.ContentType?.ToString() ?? "application/json";
+                // await Response.StartAsync();
+                // await Response.WriteAsync(loginResp);
+                // await Response.CompleteAsync();
             }
             catch (MatrixException e) {
                 await Response.StartAsync();
@@ -54,10 +56,9 @@ public class RoomsSendMessageController(ILogger<LoginController> logger, Homeser
         }
     }
 
-    private async Task handleMxaeCommand(AuthenticatedHomeserverGeneric hs, string roomId, RoomMessageEventContent msg) {
-        var syncState = SyncController.SyncStates.GetValueOrDefault(hs.AccessToken);
-        if (syncState is null) return;
-        syncState.SendEphemeralTimelineEventInRoom(roomId, new() {
+    private async Task handleMxaeCommand(UserContextService.UserContext hs, string roomId, RoomMessageEventContent msg) {
+        if (hs.SyncState is null) return;
+        hs.SyncState.SendEphemeralTimelineEventInRoom(roomId, new() {
             Sender = "@mxae:" + Request.Host.Value,
             Type = "m.room.message",
             TypedContent = MessageFormatter.FormatSuccess("Thinking..."),

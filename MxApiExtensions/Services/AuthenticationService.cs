@@ -1,3 +1,5 @@
+using ArcaneLibs.Extensions;
+using LibMatrix;
 using LibMatrix.Services;
 using MxApiExtensions.Classes.LibMatrix;
 
@@ -17,7 +19,7 @@ public class AuthenticationService(ILogger<AuthenticationService> logger, MxApiE
             token = _request.Query["access_token"];
         }
 
-        if (token == null && fail) {
+        if (string.IsNullOrWhiteSpace(token) && fail) {
             throw new MxApiMatrixException {
                 ErrorCode = "M_MISSING_TOKEN",
                 Error = "Missing access token"
@@ -29,7 +31,7 @@ public class AuthenticationService(ILogger<AuthenticationService> logger, MxApiE
 
     public async Task<string> GetMxidFromToken(string? token = null, bool fail = true) {
         token ??= GetToken(fail);
-        if (token == null) {
+        if (string.IsNullOrWhiteSpace(token)) {
             if (fail) {
                 throw new MxApiMatrixException {
                     ErrorCode = "M_MISSING_TOKEN",
@@ -44,15 +46,34 @@ public class AuthenticationService(ILogger<AuthenticationService> logger, MxApiE
             _tokenMap = (await File.ReadAllLinesAsync("token_map"))
                 .Select(l => l.Split('\t'))
                 .ToDictionary(l => l[0], l => l[1]);
+            
+            //THIS IS BROKEN, DO NOT USE!
+            // foreach (var (mapToken, mapUser) in _tokenMap) {
+            //     try {
+            //         var hs = await homeserverProviderService.GetAuthenticatedWithToken(mapUser.Split(':', 2)[1], mapToken);
+            //     }
+            //     catch (MatrixException e) {
+            //         if (e is { ErrorCode: "M_UNKNOWN_TOKEN" }) _tokenMap[mapToken] = "";
+            //     }
+            //     catch {
+            //         // ignored
+            //     }
+            // }
+            // _tokenMap.RemoveAll((x, y) => string.IsNullOrWhiteSpace(y));
+            // await File.WriteAllTextAsync("token_map", _tokenMap.Aggregate("", (x, y) => $"{y.Key}\t{y.Value}\n"));
         }
+        
 
         if (_tokenMap.TryGetValue(token, out var mxid)) return mxid;
 
         var lookupTasks = new Dictionary<string, Task<string?>>();
         foreach (var homeserver in config.AuthHomeservers) {
-            lookupTasks.Add(homeserver, GetMxidFromToken(token, homeserver));
-            await lookupTasks[homeserver].WaitAsync(TimeSpan.FromMilliseconds(250));
-            if(lookupTasks[homeserver].IsCompletedSuccessfully && !string.IsNullOrWhiteSpace(lookupTasks[homeserver].Result)) break;
+            try {
+                lookupTasks.Add(homeserver, GetMxidFromToken(token, homeserver));
+                await lookupTasks[homeserver].WaitAsync(TimeSpan.FromMilliseconds(500));
+                if (lookupTasks[homeserver].IsCompletedSuccessfully && !string.IsNullOrWhiteSpace(lookupTasks[homeserver].Result)) break;
+            }
+            catch {}
         }
         await Task.WhenAll(lookupTasks.Values);
 

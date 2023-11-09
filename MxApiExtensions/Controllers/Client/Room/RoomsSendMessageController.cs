@@ -13,6 +13,6 @@ public class RoomController(ILogger<LoginController> logger, HomeserverResolverS
     public async Task<Dictionary<string, List<string>>> GetRoomMembersByHomeserver(string _, [FromRoute] string roomId, [FromQuery] bool joinedOnly = true) {
         var hs = await hsProvider.GetHomeserver();
         var room = hs.GetRoom(roomId);
-        return await room.GetMembersByHomeserverAsync();
+        return await room.GetMembersByHomeserverAsync(joinedOnly);
     }
 }

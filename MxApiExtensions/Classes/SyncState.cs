@@ -10,13 +10,12 @@ using Microsoft.OpenApi.Extensions;
 namespace MxApiExtensions.Classes;
 
 public class SyncState {
-    private Task? _nextSyncResponse;
+    private Task<HttpResponseMessage>? _nextSyncResponse;
     public string? NextBatch { get; set; }
     public ConcurrentQueue<SyncResponse> SyncQueue { get; set; } = new();
-    public bool IsInitialSync { get; set; }
 
     [JsonIgnore]
-    public Task? NextSyncResponse {
+    public Task<HttpResponseMessage>? NextSyncResponse {
         get => _nextSyncResponse;
         set {
             _nextSyncResponse = value;
@@ -25,7 +24,7 @@ public class SyncState {
     }
 
     public DateTime NextSyncResponseStartedAt { get; set; } = DateTime.Now;
-    
+
     [JsonIgnore]
     public AuthenticatedHomeserverGeneric Homeserver { get; set; }
 
@@ -39,53 +38,39 @@ public class SyncState {
         NextSyncResponse?.IsFaulted,
         Status = NextSyncResponse?.Status.GetDisplayName()
     };
-    
 
 #endregion
 
-    public void SendEphemeralTimelineEventInRoom(string roomId, StateEventResponse @event) {
-        SyncQueue.Enqueue(new() {
-            NextBatch = NextBatch ?? "null",
-            Rooms = new() {
-                Join = new() {
-                    {
-                        roomId,
-                        new() {
-                            Timeline = new() {
-                                Events = new() {
-                                    @event
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        });
+    public SyncResponse SendEphemeralTimelineEventInRoom(string roomId, StateEventResponse @event, SyncResponse? existingResponse = null) {
+        if(existingResponse is null)
+            SyncQueue.Enqueue(existingResponse = new());
+        existingResponse.Rooms ??= new();
+        existingResponse.Rooms.Join ??= new();
+        existingResponse.Rooms.Join.TryAdd(roomId, new());
+        existingResponse.Rooms.Join[roomId].Timeline ??= new();
+        existingResponse.Rooms.Join[roomId].Timeline.Events ??= new();
+        existingResponse.Rooms.Join[roomId].Timeline.Events.Add(@event);
+        return existingResponse;
     }
 
-    public void SendStatusMessage(string text) {
-        SyncQueue.Enqueue(new() {
-            NextBatch = NextBatch ?? "null",
-            Presence = new() {
-                Events = new() {
-                    new StateEventResponse {
-                        TypedContent = new PresenceEventContent {
-                            DisplayName = "MxApiExtensions",
-                            Presence = "online",
-                            StatusMessage = text,
-                            // AvatarUrl = (await syncState.Homeserver.GetProfile(syncState.Homeserver.WhoAmI.UserId)).AvatarUrl
-                            AvatarUrl = "",
-                            LastActiveAgo = 15,
-                            CurrentlyActive = true
-                        },
-                        Type = "m.presence",
-                        StateKey = Homeserver.WhoAmI.UserId,
-                        Sender = Homeserver.WhoAmI.UserId,
-                        EventId = Guid.NewGuid().ToString(),
-                        OriginServerTs = 0
-                    }
-                }
-            }
+    public SyncResponse SendStatusMessage(string text, SyncResponse? existingResponse = null) {
+        if(existingResponse is null)
+            SyncQueue.Enqueue(existingResponse = new());
+        existingResponse.Presence ??= new();
+        // existingResponse.Presence.Events ??= new();
+        existingResponse.Presence.Events.RemoveAll(x => x.Sender == Homeserver.WhoAmI.UserId);
+        existingResponse.Presence.Events.Add(new StateEventResponse {
+            TypedContent = new PresenceEventContent {
+                Presence = "online",
+                StatusMessage = text,
+                LastActiveAgo = 15,
+                CurrentlyActive = true
+            },
+            Type = "m.presence",
+            StateKey = "",
+            Sender = Homeserver.WhoAmI.UserId,
+            OriginServerTs = 0
         });
+        return existingResponse;
     }
 }
