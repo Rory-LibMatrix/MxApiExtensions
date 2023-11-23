@@ -9,7 +9,7 @@ namespace MxApiExtensions.Services;
 
 public class UserContextService(MxApiExtensionsConfiguration config, AuthenticatedHomeserverProviderService hsProvider) {
     internal static ConcurrentDictionary<string, UserContext> UserContextStore { get; set; } = new();
-    public int SessionCount = UserContextStore.Count;
+    public readonly int SessionCount = UserContextStore.Count;
 
     public class UserContext {
         public SyncState? SyncState { get; set; }

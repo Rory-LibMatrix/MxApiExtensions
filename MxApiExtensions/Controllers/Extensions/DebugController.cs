@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.OpenApi.Extensions;
 using MxApiExtensions.Classes.LibMatrix;
 using MxApiExtensions.Services;
 
@@ -15,6 +16,7 @@ public class DebugController(ILogger<ProxyConfigurationController> logger, MxApi
 
     [HttpGet("debug")]
     public async Task<object?> GetDebug() {
+#if !DEBUG
         var user = await userContextService.GetCurrentUserContext();
         var mxid = user.Homeserver.UserId;
         if(!config.Admins.Contains(mxid)) {
@@ -29,8 +31,19 @@ public class DebugController(ILogger<ProxyConfigurationController> logger, MxApi
             await Response.CompleteAsync();
             return null;
         }
-
         _logger.LogInformation("Got debug request for {user}", mxid);
-        return UserContextService.UserContextStore;
+#endif
+
+        return new {
+            syncControllerTasks = SyncController.TrackedTasks.Select(t => new {
+                t?.Id,
+                t?.IsCompleted,
+                t?.IsCompletedSuccessfully,
+                t?.IsCanceled,
+                t?.IsFaulted,
+                Status = t?.Status.GetDisplayName()
+            }),
+            UserContextService.UserContextStore
+        };
     }
 }

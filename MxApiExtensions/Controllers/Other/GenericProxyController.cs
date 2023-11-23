@@ -6,10 +6,15 @@ using MxApiExtensions.Services;
 namespace MxApiExtensions.Controllers;
 
 [ApiController]
-[Route("/{*_}")]
+[Route("/_matrix/{*_}")]
 public class GenericController(ILogger<GenericController> logger, MxApiExtensionsConfiguration config, AuthenticationService authenticationService,
         AuthenticatedHomeserverProviderService authenticatedHomeserverProviderService)
     : ControllerBase {
+    /// <summary>
+    /// Direct proxy to upstream
+    /// </summary>
+    /// <param name="_">API path (unused, as Request.Path is used instead)</param>
+    /// <param name="access_token">Optional access token</param>
     [HttpGet]
     public async Task Proxy([FromQuery] string? access_token, string? _) {
         try {
@@ -60,6 +65,11 @@ public class GenericController(ILogger<GenericController> logger, MxApiExtension
         }
     }
 
+    /// <summary>
+    /// Direct proxy to upstream
+    /// </summary>
+    /// <param name="_">API path (unused, as Request.Path is used instead)</param>
+    /// <param name="access_token">Optional access token</param>
     [HttpPost]
     public async Task ProxyPost([FromQuery] string? access_token, string _) {
         try {
@@ -117,6 +127,11 @@ public class GenericController(ILogger<GenericController> logger, MxApiExtension
         }
     }
 
+    /// <summary>
+    /// Direct proxy to upstream
+    /// </summary>
+    /// <param name="_">API path (unused, as Request.Path is used instead)</param>
+    /// <param name="access_token">Optional access token</param>
     [HttpPut]
     public async Task ProxyPut([FromQuery] string? access_token, string _) {
         try {

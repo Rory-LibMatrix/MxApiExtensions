@@ -36,25 +36,49 @@ public class MediaProxyController(ILogger<GenericController> logger, MxApiExtens
                     var a = await authenticatedHomeserverProviderService.TryGetRemoteHomeserver();
                     if(a is not null)
                         FeasibleHomeservers.Add(a);
+
+                    if (a is AuthenticatedHomeserverGeneric ahg) {
+                        var rooms = await ahg.GetJoinedRooms();
+                        foreach (var room in rooms) {
+                            var ahs = (await room.GetMembersByHomeserverAsync()).Keys.Select(x=>x.ToString()).ToList();
+                            foreach (var ah in ahs) {
+                                try {
+                                    if (!FeasibleHomeservers.Any(x => x.BaseUrl == ah)) {
+                                        FeasibleHomeservers.Add(await hsProvider.GetRemoteHomeserver(ah));
+                                    }
+                                }
+                                catch { }
+                            }
+                        }
+                    }
                 }
                 
                 FeasibleHomeservers.Add(await hsProvider.GetRemoteHomeserver(serverName));
+                
                 
                 foreach (var homeserver in FeasibleHomeservers) {
                     var resp = await homeserver.ClientHttpClient.GetAsync($"{Request.Path}");
                     if(!resp.IsSuccessStatusCode) continue;
                     entry.ContentType = resp.Content.Headers.ContentType?.ToString() ?? "application/json";
                     entry.Data = await resp.Content.ReadAsByteArrayAsync();
+                    if (entry.Data is not { Length: >0 }) throw new NullReferenceException("No data received?");
                     break;
                 }
+                if (entry.Data is not { Length: >0 }) throw new NullReferenceException("No data received from any homeserver?");
+            }
+            else if (_mediaCache[$"{serverName}/{mediaId}"].Data is not { Length: > 0 }) {
+                _mediaCache.Remove($"{serverName}/{mediaId}");
+                await ProxyMedia(_, serverName, mediaId);
+                return;
             }
             else entry = _mediaCache[$"{serverName}/{mediaId}"];
+            if (entry.Data is null) throw new NullReferenceException("No data?");
             _semaphore.Release();
             
             Response.StatusCode = 200;
             Response.ContentType = entry.ContentType;
             await Response.StartAsync();
-            await Response.Body.WriteAsync(entry.Data, 0, entry.Data.Length);
+            await Response.Body.WriteAsync(entry.Data.ToArray(), 0, entry.Data.Length);
             await Response.Body.FlushAsync();
             await Response.CompleteAsync();
         }
