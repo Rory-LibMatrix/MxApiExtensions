@@ -2,10 +2,10 @@ namespace MxApiExtensions.Extensions;
 
 public static class HttpResponseExtensions {
     public static async Task WriteHttpResponse(this HttpResponse response, HttpResponseMessage message) {
-        response.StatusCode = (int) message.StatusCode;
+        response.StatusCode = (int)message.StatusCode;
         //copy all headers
         foreach (var header in message.Headers) {
-            response.Headers.Add(header.Key, header.Value.ToArray());
+            response.Headers.Append(header.Key, header.Value.ToArray());
         }
 
         await response.StartAsync();

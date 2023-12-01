@@ -17,7 +17,7 @@ public class FileStorageProvider : IStorageProvider {
         new Logger<FileStorageProvider>(new LoggerFactory()).LogInformation("test");
         Console.WriteLine($"Initialised FileStorageProvider with path {targetPath}");
         TargetPath = targetPath;
-        if(!Directory.Exists(targetPath)) {
+        if (!Directory.Exists(targetPath)) {
             Directory.CreateDirectory(targetPath);
         }
     }

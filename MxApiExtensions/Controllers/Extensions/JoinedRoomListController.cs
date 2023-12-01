@@ -56,11 +56,11 @@ public class JoinedRoomListController : ControllerBase {
 
         if (hs is not null) {
             Response.ContentType = "application/json";
-            Response.Headers.Add("Cache-Control", "public, max-age=60");
-            Response.Headers.Add("Expires", DateTime.Now.AddMinutes(1).ToString("R"));
-            Response.Headers.Add("Last-Modified", DateTime.Now.ToString("R"));
-            Response.Headers.Add("X-Matrix-Server", hs.ServerName);
-            Response.Headers.Add("X-Matrix-User", hs.UserId);
+            Response.Headers.Append("Cache-Control", "public, max-age=60");
+            Response.Headers.Append("Expires", DateTime.Now.AddMinutes(1).ToString("R"));
+            Response.Headers.Append("Last-Modified", DateTime.Now.ToString("R"));
+            Response.Headers.Append("X-Matrix-Server", hs.ServerName);
+            Response.Headers.Append("X-Matrix-User", hs.UserId);
             // await Response.StartAsync();
 
             var cachedRooms = _roomInfoCache
@@ -99,8 +99,8 @@ public class JoinedRoomListController : ControllerBase {
             result.StateCount++;
             if (@event.Type != "m.room.member") result.RoomState.Add(@event);
             else {
-                if(!result.MemberCounts.ContainsKey((@event.TypedContent as RoomMemberEventContent)?.Membership)) result.MemberCounts.Add((@event.TypedContent as RoomMemberEventContent)?.Membership, 0);
-                    result.MemberCounts[(@event.TypedContent as RoomMemberEventContent)?.Membership]++;
+                if (!result.MemberCounts.ContainsKey((@event.TypedContent as RoomMemberEventContent)?.Membership)) result.MemberCounts.Add((@event.TypedContent as RoomMemberEventContent)?.Membership, 0);
+                result.MemberCounts[(@event.TypedContent as RoomMemberEventContent)?.Membership]++;
             }
         }
 
@@ -119,7 +119,7 @@ public class JoinedRoomListController : ControllerBase {
     [HttpGet("joined_rooms_with_info_cache")]
     public async Task<object> GetRoomInfoCache() {
         var mxid = await _authenticationService.GetMxidFromToken();
-        if(!_config.Admins.Contains(mxid)) {
+        if (!_config.Admins.Contains(mxid)) {
             Response.StatusCode = StatusCodes.Status403Forbidden;
             Response.ContentType = "application/json";
 

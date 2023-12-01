@@ -1,7 +1,7 @@
 using LibMatrix.EventTypes;
 using LibMatrix.Interfaces;
 
-namespace MxApiExtensions.Classes; 
+namespace MxApiExtensions.Classes;
 
 [MatrixEvent(EventName = EventId)]
 public class MxApiExtensionsUserConfiguration : EventContent {

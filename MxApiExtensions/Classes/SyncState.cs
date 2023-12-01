@@ -28,7 +28,7 @@ public class SyncState {
     [JsonIgnore]
     public AuthenticatedHomeserverGeneric Homeserver { get; set; }
 
-#region Debug stuff
+    #region Debug stuff
 
     public object NextSyncResponseTaskInfo => new {
         NextSyncResponse?.Id,
@@ -39,10 +39,10 @@ public class SyncState {
         Status = NextSyncResponse?.Status.GetDisplayName()
     };
 
-#endregion
+    #endregion
 
     public SyncResponse SendEphemeralTimelineEventInRoom(string roomId, StateEventResponse @event, SyncResponse? existingResponse = null) {
-        if(existingResponse is null)
+        if (existingResponse is null)
             SyncQueue.Enqueue(existingResponse = new());
         existingResponse.Rooms ??= new();
         existingResponse.Rooms.Join ??= new();
@@ -54,7 +54,7 @@ public class SyncState {
     }
 
     public SyncResponse SendStatusMessage(string text, SyncResponse? existingResponse = null) {
-        if(existingResponse is null)
+        if (existingResponse is null)
             SyncQueue.Enqueue(existingResponse = new());
         existingResponse.Presence ??= new();
         // existingResponse.Presence.Events ??= new();

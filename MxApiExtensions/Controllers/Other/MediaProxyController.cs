@@ -21,7 +21,7 @@ public class MediaProxyController(ILogger<GenericController> logger, MxApiExtens
 
     private static Dictionary<string, MediaCacheEntry> _mediaCache = new();
     private static SemaphoreSlim _semaphore = new(1, 1);
-    
+
     [HttpGet("/_matrix/media/{_}/download/{serverName}/{mediaId}")]
     public async Task ProxyMedia(string? _, string serverName, string mediaId) {
         try {
@@ -34,13 +34,13 @@ public class MediaProxyController(ILogger<GenericController> logger, MxApiExtens
                 List<RemoteHomeserver> FeasibleHomeservers = new();
                 {
                     var a = await authenticatedHomeserverProviderService.TryGetRemoteHomeserver();
-                    if(a is not null)
+                    if (a is not null)
                         FeasibleHomeservers.Add(a);
 
                     if (a is AuthenticatedHomeserverGeneric ahg) {
                         var rooms = await ahg.GetJoinedRooms();
                         foreach (var room in rooms) {
-                            var ahs = (await room.GetMembersByHomeserverAsync()).Keys.Select(x=>x.ToString()).ToList();
+                            var ahs = (await room.GetMembersByHomeserverAsync()).Keys.Select(x => x.ToString()).ToList();
                             foreach (var ah in ahs) {
                                 try {
                                     if (!FeasibleHomeservers.Any(x => x.BaseUrl == ah)) {
@@ -52,19 +52,19 @@ public class MediaProxyController(ILogger<GenericController> logger, MxApiExtens
                         }
                     }
                 }
-                
+
                 FeasibleHomeservers.Add(await hsProvider.GetRemoteHomeserver(serverName));
-                
-                
+
+
                 foreach (var homeserver in FeasibleHomeservers) {
                     var resp = await homeserver.ClientHttpClient.GetAsync($"{Request.Path}");
-                    if(!resp.IsSuccessStatusCode) continue;
+                    if (!resp.IsSuccessStatusCode) continue;
                     entry.ContentType = resp.Content.Headers.ContentType?.ToString() ?? "application/json";
                     entry.Data = await resp.Content.ReadAsByteArrayAsync();
-                    if (entry.Data is not { Length: >0 }) throw new NullReferenceException("No data received?");
+                    if (entry.Data is not { Length: > 0 }) throw new NullReferenceException("No data received?");
                     break;
                 }
-                if (entry.Data is not { Length: >0 }) throw new NullReferenceException("No data received from any homeserver?");
+                if (entry.Data is not { Length: > 0 }) throw new NullReferenceException("No data received from any homeserver?");
             }
             else if (_mediaCache[$"{serverName}/{mediaId}"].Data is not { Length: > 0 }) {
                 _mediaCache.Remove($"{serverName}/{mediaId}");
@@ -74,7 +74,7 @@ public class MediaProxyController(ILogger<GenericController> logger, MxApiExtens
             else entry = _mediaCache[$"{serverName}/{mediaId}"];
             if (entry.Data is null) throw new NullReferenceException("No data?");
             _semaphore.Release();
-            
+
             Response.StatusCode = 200;
             Response.ContentType = entry.ContentType;
             await Response.StartAsync();

@@ -10,14 +10,12 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="ArcaneLibs" Version="1.0.0-preview6437853305.78f6d30" />
         <PackageReference Include="EasyCompressor.LZMA" Version="1.4.0" />
         <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.0" />
         <PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0" />
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\..\ArcaneLibs\ArcaneLibs\ArcaneLibs.csproj" />
       <ProjectReference Include="..\..\LibMatrix\LibMatrix\LibMatrix.csproj" />
       <ProjectReference Include="..\MxApiExtensions.Classes.LibMatrix\MxApiExtensions.Classes.LibMatrix.csproj" />
       <ProjectReference Include="..\MxApiExtensions.Classes\MxApiExtensions.Classes.csproj" />

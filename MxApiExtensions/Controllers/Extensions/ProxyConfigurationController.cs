@@ -24,7 +24,7 @@ public class ProxyConfigurationController : ControllerBase {
     [HttpGet("proxy_config")]
     public async Task<MxApiExtensionsConfiguration> GetConfig() {
         var mxid = await _authenticationService.GetMxidFromToken();
-        if(!_config.Admins.Contains(mxid)) {
+        if (!_config.Admins.Contains(mxid)) {
             _logger.LogWarning("Got proxy config request for {user}, but they are not an admin", mxid);
             Response.StatusCode = StatusCodes.Status403Forbidden;
             Response.ContentType = "application/json";

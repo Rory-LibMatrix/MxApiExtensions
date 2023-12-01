@@ -42,11 +42,11 @@ public class AuthenticationService(ILogger<AuthenticationService> logger, MxApiE
             return "@anonymous:*";
         }
 
-        if(_tokenMap is not { Count: >0 } && File.Exists("token_map")) {
+        if (_tokenMap is not { Count: > 0 } && File.Exists("token_map")) {
             _tokenMap = (await File.ReadAllLinesAsync("token_map"))
                 .Select(l => l.Split('\t'))
                 .ToDictionary(l => l[0], l => l[1]);
-            
+
             //THIS IS BROKEN, DO NOT USE!
             // foreach (var (mapToken, mapUser) in _tokenMap) {
             //     try {
@@ -62,7 +62,7 @@ public class AuthenticationService(ILogger<AuthenticationService> logger, MxApiE
             // _tokenMap.RemoveAll((x, y) => string.IsNullOrWhiteSpace(y));
             // await File.WriteAllTextAsync("token_map", _tokenMap.Aggregate("", (x, y) => $"{y.Key}\t{y.Value}\n"));
         }
-        
+
 
         if (_tokenMap.TryGetValue(token, out var mxid)) return mxid;
 
@@ -73,12 +73,12 @@ public class AuthenticationService(ILogger<AuthenticationService> logger, MxApiE
                 await lookupTasks[homeserver].WaitAsync(TimeSpan.FromMilliseconds(500));
                 if (lookupTasks[homeserver].IsCompletedSuccessfully && !string.IsNullOrWhiteSpace(lookupTasks[homeserver].Result)) break;
             }
-            catch {}
+            catch { }
         }
         await Task.WhenAll(lookupTasks.Values);
 
         mxid = lookupTasks.Values.FirstOrDefault(x => x.Result != null)?.Result;
-        if(mxid is null) {
+        if (mxid is null) {
             throw new MxApiMatrixException {
                 ErrorCode = "M_UNKNOWN_TOKEN",
                 Error = "Token not found on any configured homeservers: " + string.Join(", ", config.AuthHomeservers)

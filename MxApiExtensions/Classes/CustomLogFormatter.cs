@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Logging.Console;
 
-namespace MxApiExtensions.Classes; 
+namespace MxApiExtensions.Classes;
 
 public class CustomLogFormatter : ConsoleFormatter {
     public CustomLogFormatter(string name) : base(name) { }

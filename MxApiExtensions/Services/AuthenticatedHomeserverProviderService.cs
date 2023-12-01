@@ -15,7 +15,7 @@ public class AuthenticatedHomeserverProviderService(AuthenticationService authen
             return null;
         }
     }
-    
+
     public async Task<RemoteHomeserver> GetRemoteHomeserver() {
         try {
             return await GetHomeserver();
@@ -23,7 +23,7 @@ public class AuthenticatedHomeserverProviderService(AuthenticationService authen
         catch (MxApiMatrixException e) {
             if (e is not { ErrorCode: "M_MISSING_TOKEN" }) throw;
             if (request is null) throw new MxApiMatrixException() { ErrorCode = "M_UNKNOWN", Error = "[MxApiExtensions] Request was null for unauthenticated request!" };
-            if (!_context.Request.Headers.Keys.Any(x=>x.ToUpper() == "MXAE_UPSTREAM"))
+            if (!_context.Request.Headers.Keys.Any(x => x.ToUpper() == "MXAE_UPSTREAM"))
                 throw new MxApiMatrixException() {
                     ErrorCode = "MXAE_MISSING_UPSTREAM",
                     Error = "[MxApiExtensions] Missing MXAE_UPSTREAM header for unauthenticated request, this should be a server_name!"
