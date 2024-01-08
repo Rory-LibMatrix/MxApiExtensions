@@ -196,7 +196,10 @@ public class SyncController(ILogger<SyncController> logger, MxApiExtensionsConfi
             try {
                 syncMsg.AccountData.Events.Add(new() {
                     Type = key,
-                    RawContent = await syncState.Homeserver.GetAccountDataAsync<JsonObject>(key)
+                    RawContent = await syncState.Homeserver.GetAccountDataAsync<JsonObject>(key),
+                    RoomId = null, //TODO: implement
+                    Sender = null,
+                    EventId = null
                 });
             }
             catch { }

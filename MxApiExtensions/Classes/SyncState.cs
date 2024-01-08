@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Text.Json.Serialization;
 using LibMatrix;
+using LibMatrix.EventTypes.Spec.Ephemeral;
 using LibMatrix.EventTypes.Spec.State;
 using LibMatrix.Helpers;
 using LibMatrix.Homeservers;
@@ -69,7 +70,9 @@ public class SyncState {
             Type = "m.presence",
             StateKey = "",
             Sender = Homeserver.WhoAmI.UserId,
-            OriginServerTs = 0
+            OriginServerTs = 0,
+            RoomId = null, //TODO: implement
+            EventId = null
         });
         return existingResponse;
     }
