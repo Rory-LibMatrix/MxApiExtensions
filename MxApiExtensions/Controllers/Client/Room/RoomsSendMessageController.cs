@@ -32,9 +32,7 @@ public class RoomsSendMessageController(ILogger<LoginController> logger, UserCon
 #pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
             handleMxaeCommand(uc, roomId, msg);
 #pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
-            await Response.WriteAsJsonAsync(new EventIdResponse() {
-                EventId = "$" + string.Join("", Random.Shared.GetItems("abcdefghijklmnopqrstuvwxyzABCDEFGHIJLKMNOPQRSTUVWXYZ0123456789".ToCharArray(), 100))
-            });
+            await Response.WriteAsJsonAsync(new EventIdResponse("$" + string.Join("", Random.Shared.GetItems("abcdefghijklmnopqrstuvwxyzABCDEFGHIJLKMNOPQRSTUVWXYZ0123456789".ToCharArray(), 100))));
             await Response.CompleteAsync();
         }
         else {
@@ -62,7 +60,7 @@ public class RoomsSendMessageController(ILogger<LoginController> logger, UserCon
             Sender = "@mxae:" + Request.Host.Value,
             Type = "m.room.message",
             TypedContent = MessageFormatter.FormatSuccess("Thinking..."),
-            OriginServerTs = (ulong)new DateTimeOffset(DateTime.UtcNow.ToUniversalTime()).ToUnixTimeMilliseconds(),
+            OriginServerTs = DateTimeOffset.Now.ToUnixTimeMilliseconds(),
             Unsigned = new() {
                 Age = 1
             },

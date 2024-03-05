@@ -188,9 +188,7 @@ public class SyncController(ILogger<SyncController> logger, MxApiExtensionsConfi
     //enqueue common account data
     private static async Task EnqueuePreloadAccountData(SyncState syncState) {
         var syncMsg = new SyncResponse() {
-            AccountData = new() {
-                Events = new()
-            }
+            AccountData = new(events: new())
         };
         foreach (var key in CommonAccountDataKeys) {
             try {
@@ -258,9 +256,7 @@ public class SyncController(ILogger<SyncController> logger, MxApiExtensionsConfi
                     {
                         room.RoomId,
                         new SyncResponse.RoomsDataStructure.JoinedRoomDataStructure {
-                            State = new() {
-                                Events = timeline.State
-                            },
+                            State = new(events: timeline.State),
                             Timeline = new() {
                                 Events = timeline.Chunk,
                                 Limited = false,
