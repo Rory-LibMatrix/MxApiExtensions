@@ -32,7 +32,7 @@ public class RoomsSendMessageController(ILogger<LoginController> logger, UserCon
 #pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
             handleMxaeCommand(uc, roomId, msg);
 #pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
-            await Response.WriteAsJsonAsync(new EventIdResponse("$" + string.Join("", Random.Shared.GetItems("abcdefghijklmnopqrstuvwxyzABCDEFGHIJLKMNOPQRSTUVWXYZ0123456789".ToCharArray(), 100))));
+            await Response.WriteAsJsonAsync(new EventIdResponse(){EventId = "$" + string.Join("", Random.Shared.GetItems("abcdefghijklmnopqrstuvwxyzABCDEFGHIJLKMNOPQRSTUVWXYZ0123456789".ToCharArray(), 100))});
             await Response.CompleteAsync();
         }
         else {
