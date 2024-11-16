@@ -62,7 +62,7 @@ public class RoomsSendMessageController(ILogger<LoginController> logger, UserCon
             TypedContent = MessageFormatter.FormatSuccess("Thinking..."),
             OriginServerTs = DateTimeOffset.Now.ToUnixTimeMilliseconds(),
             Unsigned = new() {
-                Age = 1
+                ["age"] = 1
             },
             RoomId = roomId,
             EventId = "$" + string.Join("", Random.Shared.GetItems("abcdefghijklmnopqrstuvwxyzABCDEFGHIJLKMNOPQRSTUVWXYZ0123456789".ToCharArray(), 100))

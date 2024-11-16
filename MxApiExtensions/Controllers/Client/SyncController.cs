@@ -222,7 +222,6 @@ public class SyncController(ILogger<SyncController> logger, MxApiExtensionsConfi
             if (dmRooms.Contains(x.RoomId)) return -1;
             var parts = x.RoomId.Split(':');
             if (parts[1] == ownHs) return 200;
-            if (HomeserverWeightEstimation.EstimatedSize.ContainsKey(parts[1])) return HomeserverWeightEstimation.EstimatedSize[parts[1]] + parts[0].Length;
             return 5000;
         }).ToList();
 
@@ -246,7 +245,7 @@ public class SyncController(ILogger<SyncController> logger, MxApiExtensionsConfi
         // await _roomDataSemaphore.WaitAsync();
         //get the room's state
         var roomState = room.GetFullStateAsync();
-        //get the room's timeline, reversed 
+        //get the room's timeline, reversed
         var timeline = await room.GetMessagesAsync(limit: 100, dir: "b");
         timeline.Chunk.Reverse();
         //queue up this data as a sync response
